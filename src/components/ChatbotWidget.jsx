@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDoc } from '@docusaurus/theme-common/internal';
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 import './ChatbotWidget.css'; // Import the CSS file
 
 const ChatbotWidget = () => {
@@ -7,16 +7,21 @@ const ChatbotWidget = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(() => {
-    // Generate a unique session ID or retrieve from localStorage
-    const storedSessionId = localStorage.getItem('chatbot-session-id');
-    if (storedSessionId) {
-      return storedSessionId;
+  const [sessionId, setSessionId] = useState(null);
+
+  // Initialize session ID only on client side
+  useEffect(() => {
+    if (ExecutionEnvironment.canUseDOM) {
+      const storedSessionId = localStorage.getItem('chatbot-session-id');
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+      } else {
+        const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('chatbot-session-id', newSessionId);
+        setSessionId(newSessionId);
+      }
     }
-    const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('chatbot-session-id', newSessionId);
-    return newSessionId;
-  });
+  }, []);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -53,11 +58,9 @@ const ChatbotWidget = () => {
     setIsLoading(true);
 
     try {
-      // Get current document context
-      const currentDoc = useDoc();
+      // Get current page context from window location
       const context = {
-        currentModule: currentDoc?.frontMatter.sidebar_label || currentDoc?.metadata.title || 'Unknown',
-        currentChapter: currentDoc?.metadata?.title || 'Unknown',
+        currentPage: ExecutionEnvironment.canUseDOM ? window.location.pathname : '/',
         userPreferences: {
           experienceLevel: 'intermediate',
           interests: ['robotics', 'ai', 'physical-ai']

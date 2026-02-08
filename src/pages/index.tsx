@@ -26,7 +26,7 @@ function HomepageHeader() {
               </Link>
               <Link
                 className="button button--outline button--primary button--lg"
-                to="/docs/module-1-physical-foundations/index">
+                to="/docs/module-1-physical-foundations/">
                 Explore Modules
               </Link>
             </div>
@@ -141,7 +141,7 @@ function ModulesOverview() {
                 <p className={styles.cardDescription}>{module.description}</p>
                 <Link
                   className="button button--sm button--primary"
-                  to={`/docs/${module.title.includes('Module 1') ? 'module-1-physical-foundations' : module.title.includes('Module 2') ? 'module-2-ros-nervous-system' : module.title.includes('Module 3') ? 'module-3-simulation-first' : 'module-4-vla-and-conversational-robotics'}/index`}>
+                  to={`/docs/${module.title.includes('Module 1') ? 'module-1-physical-foundations' : module.title.includes('Module 2') ? 'module-2-ros-nervous-system' : module.title.includes('Module 3') ? 'module-3-simulation-first' : 'module-4-vla-and-conversational-robotics'}/`}>
                   Explore Module
                 </Link>
               </div>
