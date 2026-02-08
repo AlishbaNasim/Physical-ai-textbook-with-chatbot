@@ -1,0 +1,245 @@
+# API Contract: RAG Chatbot Service
+
+## Overview
+This document defines the API contract for the RAG (Retrieval-Augmented Generation) chatbot service that powers the Physical AI & Humanoid Robotics textbook learning assistant.
+
+## Base URL
+```
+https://api.physical-ai-textbook.com/v1
+```
+For local development:
+```
+http://localhost:8080/api
+```
+
+## Authentication
+All API requests require an API key in the header:
+```
+Authorization: Bearer {your-api-key}
+```
+
+## Endpoints
+
+### 1. Chat Query Endpoint
+
+**POST** `/chat`
+
+Submit a query to the RAG-powered chatbot and receive a response based on textbook content.
+
+#### Request
+```json
+{
+  "query": "What is the role of ROS 2 in humanoid robotics?",
+  "sessionId": "unique-session-identifier",
+  "context": {
+    "currentModule": "module-2-ros-nervous-system",
+    "currentChapter": "chapter-1-ros-fundamentals",
+    "userPreferences": {
+      "experienceLevel": "intermediate",
+      "interests": ["control-systems", "navigation"]
+    }
+  }
+}
+```
+
+#### Response
+```json
+{
+  "id": "response-unique-id",
+  "query": "What is the role of ROS 2 in humanoid robotics?",
+  "response": "ROS 2 serves as the nervous system of humanoid robots by providing a communication framework that allows different components of the robot to exchange information. It uses a publish-subscribe model where sensors publish data and controllers subscribe to that data to make decisions...",
+  "sources": [
+    {
+      "chapterId": "chapter-1-ros-fundamentals",
+      "chapterTitle": "ROS 2 Fundamentals",
+      "module": "module-2-ros-nervous-system",
+      "section": "Communication Architecture",
+      "relevanceScore": 0.92
+    }
+  ],
+  "isGrounded": true,
+  "confidenceScore": 0.85,
+  "timestamp": "2026-01-07T10:30:00Z"
+}
+```
+
+#### Error Responses
+- `400 Bad Request`: Invalid query format or missing required fields
+- `401 Unauthorized`: Invalid or missing API key
+- `429 Too Many Requests`: Rate limit exceeded
+- `500 Internal Server Error`: Processing error
+
+### 2. Query Validation Endpoint
+
+**POST** `/validate-query`
+
+Validate if a query is within the scope of the textbook content.
+
+#### Request
+```json
+{
+  "query": "How do I install Windows 11?",
+  "sessionId": "unique-session-identifier"
+}
+```
+
+#### Response
+```json
+{
+  "query": "How do I install Windows 11?",
+  "isWithinScope": false,
+  "explanation": "This query is about Windows installation, which is outside the scope of the Physical AI & Humanoid Robotics textbook content.",
+  "suggestions": [
+    {
+      "suggestion": "What are the system requirements for ROS 2?",
+      "relevance": "high"
+    },
+    {
+      "suggestion": "How to set up a ROS 2 workspace?",
+      "relevance": "high"
+    }
+  ],
+  "timestamp": "2026-01-07T10:30:00Z"
+}
+```
+
+### 3. Content Retrieval Endpoint
+
+**POST** `/retrieve`
+
+Retrieve relevant textbook content for a given query without generating a full response.
+
+#### Request
+```json
+{
+  "query": "Explain inverse kinematics in humanoid robots",
+  "maxResults": 5,
+  "sessionId": "unique-session-identifier"
+}
+```
+
+#### Response
+```json
+{
+  "query": "Explain inverse kinematics in humanoid robots",
+  "results": [
+    {
+      "id": "chunk-123",
+      "content": "Inverse kinematics (IK) is a mathematical process used in robotics to determine the joint parameters needed to position the end effector of a robot arm at a specific location and orientation...",
+      "chapterId": "chapter-3-control-architectures",
+      "moduleId": "module-2-ros-nervous-system",
+      "relevanceScore": 0.94,
+      "metadata": {
+        "section": "Motion Planning",
+        "keywords": ["kinematics", "motion-planning", "robot-control"]
+      }
+    }
+  ],
+  "timestamp": "2026-01-07T10:30:00Z"
+}
+```
+
+### 4. Session Management Endpoint
+
+**GET** `/session/{sessionId}`
+
+Retrieve information about a specific chat session.
+
+#### Response
+```json
+{
+  "sessionId": "session-123",
+  "createdAt": "2026-01-07T10:00:00Z",
+  "lastActivity": "2026-01-07T10:30:00Z",
+  "queryCount": 5,
+  "active": true
+}
+```
+
+**DELETE** `/session/{sessionId}`
+
+End and clear a chat session.
+
+#### Response
+```json
+{
+  "sessionId": "session-123",
+  "status": "ended",
+  "message": "Session successfully ended and cleared"
+}
+```
+
+### 5. Health Check Endpoint
+
+**GET** `/health`
+
+Check the health status of the RAG service.
+
+#### Response
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-07T10:30:00Z",
+  "dependencies": {
+    "vectorStore": "connected",
+    "llmProvider": "available",
+    "contentIndex": "ready"
+  }
+}
+```
+
+## Rate Limits
+
+- Standard users: 100 requests per hour
+- Educational institutions: 1000 requests per hour
+- Premium access: 10,000 requests per hour
+
+Rate limit headers are included in all responses:
+- `X-RateLimit-Limit`: The maximum number of requests allowed
+- `X-RateLimit-Remaining`: The remaining number of requests
+- `X-RateLimit-Reset`: The time when the rate limit resets
+
+## Data Models
+
+### Query Object
+- `query` (string, required): The user's question or statement
+- `sessionId` (string, required): Unique identifier for the conversation session
+- `context` (object, optional): Additional context for the query
+- `userId` (string, optional): User identifier if authenticated
+
+### Response Object
+- `id` (string): Unique identifier for the response
+- `query` (string): The original query
+- `response` (string): The chatbot's response
+- `sources` (array): Array of content sources used to generate the response
+- `isGrounded` (boolean): Whether the response is grounded in textbook content
+- `confidenceScore` (number): Confidence level (0-1) of the response
+- `timestamp` (string): ISO 8601 timestamp
+
+### Source Object
+- `chapterId` (string): ID of the chapter containing the source content
+- `chapterTitle` (string): Title of the chapter
+- `module` (string): Module containing the chapter
+- `section` (string): Specific section within the chapter
+- `relevanceScore` (number): Relevance score (0-1) of the content to the query
+
+## Error Model
+
+All error responses follow this structure:
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": "Additional error details if applicable"
+  }
+}
+```
+
+## Versioning
+The API uses versioning in the URL path (e.g., `/v1/chat`). Breaking changes will increment the major version number.
+
+## Security
+- All API keys should be kept secret and not exposed in client-side code
+- HTTPS is required for all API requests
+- Input validation is performed on all endpoints to prevent injection attacks
